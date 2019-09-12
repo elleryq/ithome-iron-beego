@@ -1,0 +1,1 @@
+/home/ubuntu/go/src/my/hello/views/user/edit.tpl
