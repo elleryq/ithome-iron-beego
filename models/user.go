@@ -3,17 +3,18 @@ package models
 import (
 	"errors"
 	"fmt"
-	"github.com/astaxie/beego/orm"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/astaxie/beego/orm"
 )
 
 type User struct {
-	Id       int64     `orm:"auto"`
-	Name     string    `orm:"size(128)"`
-	Gender   string    `orm:"size(128)"`
-	Birthday time.Time `orm:"type(datetime)"`
+	Id       int64     `orm:"auto" form:"-"`
+	Name     string    `orm:"size(128)" form:"name"`
+	Gender   string    `orm:"size(1)" form:"gender"`
+	Birthday time.Time `orm:"type(datetime)" form:"birthday,date"`
 }
 
 func init() {

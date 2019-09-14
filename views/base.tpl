@@ -29,7 +29,7 @@
       }
       .starter {
         padding: 3rem 1.5rem;
-        text-align: center;
+        /* text-align: center; */
       }
     </style>
   </head>

@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"errors"
+	"html/template"
 	"my/hello/models"
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
@@ -84,4 +86,51 @@ func (c *MyUserController) GetAll() {
 		c.Data["object_list"] = l
 	}
 	c.TplName = "user/index.tpl"
+}
+
+// GetAddForm ...
+func (c *MyUserController) GetAddForm() {
+	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+	c.Data["has_error"] = false
+	c.TplName = "user/create.tpl"
+}
+
+// PostAddForm
+func (c *MyUserController) PostAddForm() {
+	c.TplName = "user/create.tpl"
+	c.Data["has_error"] = false
+
+	// Check XSRF first.
+	if !c.CheckXSRFCookie() {
+		c.Data["error"] = "XSRF token missing or incorrect."
+		c.Data["has_error"] = true
+		return
+	}
+
+	// parse form parameters
+	var birthday time.Time
+	name := c.GetString("name")
+	gender := c.GetString("gender")
+	t, err := time.Parse("2006-01-02", c.GetString("birthday"))
+	if err != nil {
+		c.Data["error"] = err.Error()
+		c.Data["has_error"] = true
+		birthday = time.Time{}
+		return
+	}
+	birthday = t
+
+	var user models.User
+	user.Name = name
+	user.Gender = gender
+	user.Birthday = birthday
+	id, err := models.AddUser(&user)
+	if err != nil {
+		c.Data["error"] = err.Error()
+		c.Data["has_error"] = true
+		return
+	}
+
+	c.Data["id"] = id
+	c.Ctx.Redirect(302, "/myuser/")
 }
