@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	_ "my/hello/global"
 	_ "my/hello/routers"
 	"os"
 
