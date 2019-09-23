@@ -2,12 +2,20 @@
 
 {{ define "content" }}
   <h1>User list</h1>
-  {{if eq true .has_error}}
+  {{if .flash.error }}
   <div class="alert alert-danger" role="alert">
-    Error: {{.error}}
+    {{.flash.error}}
+  </div>
+  {{end}}
+  {{if .flash.success }}
+  <div class="alert alert-success" role="alert">
+    {{.flash.success}}
   </div>
   {{end}}
 
+  <div>
+  <a href="/myuser/create" class="btn btn-primary">Create</a>
+  </div>
   <p>Total records: {{.object_list_len}}</p>
   <table class="table">
     <thead>

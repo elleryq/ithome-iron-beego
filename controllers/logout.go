@@ -12,6 +12,5 @@ type LogoutController struct {
 // Get
 func (c *LogoutController) Get() {
 	c.DelSession("user_id")
-	c.Data["has_error"] = false
 	c.TplName = "logout/index.tpl"
 }

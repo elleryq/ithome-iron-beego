@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"html/template"
 	"my/hello/models"
 	"strings"
@@ -36,7 +35,7 @@ func (c *MyUserController) GetAll() {
 	var limit int64 = 10
 	var offset int64
 
-	c.Data["has_error"] = false
+	flash := beego.ReadFromRequest(&c.Controller)
 	logs.Debug("parsing parameters")
 
 	// fields: col1,col2,entity.col3
@@ -64,8 +63,7 @@ func (c *MyUserController) GetAll() {
 		for _, cond := range strings.Split(v, ",") {
 			kv := strings.SplitN(cond, ":", 2)
 			if len(kv) != 2 {
-				c.Data["has_error"] = true
-				c.Data["error"] = errors.New("Error: invalid query key/value pair")
+				flash.Error("Error: invalid query key/value pair")
 				return
 			}
 			k, v := kv[0], kv[1]
@@ -77,33 +75,38 @@ func (c *MyUserController) GetAll() {
 	l, err := models.GetAllUser(query, fields, sortby, order, offset, limit)
 	if err != nil {
 		logs.Error(err.Error())
-		// c.Data["error"] = err.Error()
-		c.Data["has_error"] = true
-		c.Data["error"] = "errors"
+		flash.Error(err.Error())
 	} else {
 		logs.Debug("len(l)=", len(l))
 		c.Data["object_list_len"] = len(l)
 		c.Data["object_list"] = l
 	}
 	c.TplName = "user/index.tpl"
+
+	flash.Store(&c.Controller)
 }
 
 // GetAddForm ...
 func (c *MyUserController) GetAddForm() {
+	flash := beego.ReadFromRequest(&c.Controller)
 	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
-	c.Data["has_error"] = false
 	c.TplName = "user/create.tpl"
+	flash.Store(&c.Controller)
 }
 
 // PostAddForm
 func (c *MyUserController) PostAddForm() {
+	var msg string
+	flash := beego.ReadFromRequest(&c.Controller)
+
 	c.TplName = "user/create.tpl"
-	c.Data["has_error"] = false
 
 	// Check XSRF first.
 	if !c.CheckXSRFCookie() {
-		c.Data["error"] = "XSRF token missing or incorrect."
-		c.Data["has_error"] = true
+		msg = "XSRF token missing or incorrect."
+		c.Data["error"] = msg
+		flash.Error(msg)
+		flash.Store(&c.Controller)
 		return
 	}
 
@@ -113,8 +116,8 @@ func (c *MyUserController) PostAddForm() {
 	gender := c.GetString("gender")
 	t, err := time.Parse("2006-01-02", c.GetString("birthday"))
 	if err != nil {
-		c.Data["error"] = err.Error()
-		c.Data["has_error"] = true
+		flash.Error(err.Error())
+		flash.Store(&c.Controller)
 		birthday = time.Time{}
 		return
 	}
@@ -126,11 +129,14 @@ func (c *MyUserController) PostAddForm() {
 	user.Birthday = birthday
 	id, err := models.AddUser(&user)
 	if err != nil {
-		c.Data["error"] = err.Error()
-		c.Data["has_error"] = true
+		flash.Error(err.Error())
+		flash.Store(&c.Controller)
 		return
 	}
 
 	c.Data["id"] = id
+	flash = beego.NewFlash()
+	flash.Success("Created successful.")
+	flash.Store(&c.Controller)
 	c.Ctx.Redirect(302, "/myuser/")
 }

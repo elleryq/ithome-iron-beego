@@ -15,12 +15,16 @@ type LoginController struct {
 
 // Post ...
 func (c *LoginController) Post() {
+	var msg string
+	flash := beego.NewFlash()
+
 	c.TplName = "login/index.tpl"
-	c.Data["has_error"] = false
 	// Check XSRF first.
 	if !c.CheckXSRFCookie() {
-		c.Data["error"] = "XSRF token missing or incorrect."
-		c.Data["has_error"] = true
+		msg = "XSRF token missing or incorrect."
+		c.Data["error"] = msg
+		flash.Error(msg)
+		flash.Store(&c.Controller)
 		return
 	}
 
@@ -32,24 +36,31 @@ func (c *LoginController) Post() {
 	v := &models.Member{Username: username}
 	if err := o.QueryTable(new(models.Member)).Filter("Username", username).RelatedSel().One(v); err != nil {
 		// not found
-		c.Data["error"] = "No such member."
-		c.Data["has_error"] = true
+		msg = "No such member."
+		c.Data["error"] = msg
+		flash.Error(msg)
+		flash.Store(&c.Controller)
 		return
 	}
 	// found, check password
 	if password == v.Password {
 		c.SetSession("user_id", int(v.Id))
 	} else {
-		c.Data["error"] = "Authentication fail."
-		c.Data["has_error"] = true
+		msg = "Authentication fail."
+		c.Data["error"] = msg
+		flash.Error(msg)
+		flash.Store(&c.Controller)
 		return
 	}
+	flash.Success("Login successed.")
+	flash.Store(&c.Controller)
 	c.Ctx.Redirect(302, "/myuser/")
 }
 
 // Get ...
 func (c *LoginController) Get() {
-	c.Data["has_error"] = false
+	flash := beego.NewFlash()
 	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
 	c.TplName = "login/index.tpl"
+	flash.Store(&c.Controller)
 }

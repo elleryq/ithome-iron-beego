@@ -2,9 +2,9 @@
 
 {{ define "content" }}
   <h1>User - Create</h1>
-  {{if eq true .has_error}}
+  {{if .flash.error}}
   <div class="alert alert-danger" role="alert">
-    Error: {{.error}}
+    Error: {{.flash.error}}
   </div>
   {{end}}
   <form action="" method="POST">
