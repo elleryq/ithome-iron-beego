@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"my/hello/controllers"
 	_ "my/hello/global"
 	_ "my/hello/routers"
 	"os"
@@ -35,6 +36,9 @@ func init() {
 
 	// set default database
 	orm.RegisterDataBase("default", DBARGS.Driver, DBARGS.Source, 30)
+
+	//
+	controllers.InitApp()
 }
 
 func main() {

@@ -11,5 +11,11 @@
   <p>
   Hello, {{.Name}}
   </p>
+  <p>
+    {{ .Message }}
+  </p>
+  <p>
+    {{ i18n .Lang "Dog is on the piano" }}
+  </p>
 </body>
 </html>

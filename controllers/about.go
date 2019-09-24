@@ -1,12 +1,8 @@
 package controllers
 
-import (
-	"github.com/astaxie/beego"
-)
-
 // AboutController operations for About
 type AboutController struct {
-	beego.Controller
+	BaseController
 }
 
 // URLMapping ...
@@ -26,5 +22,6 @@ func (c *AboutController) Get() {
 	}
 
 	c.Data["Name"] = "John Doe"
+	c.Data["Message"] = c.Tr("Cat is on the piano")
 	c.TplName = "about.tpl"
 }
