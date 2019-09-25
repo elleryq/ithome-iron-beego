@@ -3,9 +3,10 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
-	"my/hello/models"
 	"strconv"
 	"strings"
+
+	"github.com/elleryq/ithome-iron-beego/models"
 
 	"github.com/astaxie/beego"
 )

@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"html/template"
-	"my/hello/models"
 	"strings"
 	"time"
+
+	"github.com/elleryq/ithome-iron-beego/models"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"

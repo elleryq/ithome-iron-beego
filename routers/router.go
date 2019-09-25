@@ -1,8 +1,9 @@
 package routers
 
 import (
-	"my/hello/controllers"
 	"strings"
+
+	"github.com/elleryq/ithome-iron-beego/controllers"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"

@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"my/hello/controllers"
-	_ "my/hello/global"
-	_ "my/hello/routers"
 	"os"
+
+	"github.com/elleryq/ithome-iron-beego/controllers"
+	_ "github.com/elleryq/ithome-iron-beego/global"
+	_ "github.com/elleryq/ithome-iron-beego/routers"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
