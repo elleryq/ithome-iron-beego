@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/elleryq/ithome-iron-beego/checks"
 	"github.com/elleryq/ithome-iron-beego/controllers"
 	_ "github.com/elleryq/ithome-iron-beego/global"
 	_ "github.com/elleryq/ithome-iron-beego/routers"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+	"github.com/astaxie/beego/toolbox"
 	_ "github.com/go-sql-driver/mysql" // import your required driver
 )
 
@@ -40,6 +42,9 @@ func init() {
 
 	//
 	controllers.InitApp()
+
+	// toolbox
+	toolbox.AddHealthCheck("database", &checks.DatabaseCheck{})
 }
 
 func main() {
