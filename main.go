@@ -46,6 +46,9 @@ func init() {
 
 	// toolbox
 	toolbox.AddHealthCheck("database", &checks.DatabaseCheck{})
+
+	// static
+	beego.SetStaticPath("/swagger", "swagger")
 }
 
 func main() {
