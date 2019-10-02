@@ -8,7 +8,8 @@ import (
 	"github.com/elleryq/ithome-iron-beego/controllers"
 	_ "github.com/elleryq/ithome-iron-beego/global"
 	_ "github.com/elleryq/ithome-iron-beego/routers"
-	_ "github.com/elleryq/ithome-iron-beego/tasks"
+
+	// _ "github.com/elleryq/ithome-iron-beego/tasks"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
