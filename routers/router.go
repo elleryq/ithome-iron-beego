@@ -30,6 +30,7 @@ func init() {
 	beego.Router("/login", &controllers.LoginController{}, "get:Get")
 	beego.Router("/login", &controllers.LoginController{}, "post:Post")
 	beego.Router("/logout", &controllers.LogoutController{}, "get:Get")
+	beego.Router("/post/:id", &controllers.PostController{}, "get:GetOne")
 
 	// beego.InsertFilter("/myuser/*", beego.BeforeRouter, auth.Basic("foobar", "pass"))
 	beego.InsertFilter("/myuser/*", beego.BeforeRouter, FilterMember)
