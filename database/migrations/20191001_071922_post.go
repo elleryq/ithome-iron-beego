@@ -20,7 +20,7 @@ func init() {
 // Run the migrations
 func (m *Post_20191001_071922) Up() {
 	// use m.SQL("CREATE TABLE ...") to make schema update
-	m.SQL("CREATE TABLE post(`id` int(11) NOT NULL AUTO_INCREMENT,`member_id` int(11) DEFAULT NULL,`title` varchar(128) NOT NULL,`content` text NULL,`posted_at` datetime NOT NULL,`modified_at` datetime NOT NULL,PRIMARY KEY (`id`),FOREIGN KEY(MemberId) REFERENCES member(Id))")
+	m.SQL("CREATE TABLE post(`id` int(11) NOT NULL AUTO_INCREMENT,`member_id` int(11) DEFAULT NULL,`title` varchar(128) NOT NULL,`content` text NULL,`posted_at` datetime NOT NULL,`modified_at` datetime NOT NULL,PRIMARY KEY (`id`),FOREIGN KEY(member_id) REFERENCES member(id))")
 }
 
 // Reverse the migrations

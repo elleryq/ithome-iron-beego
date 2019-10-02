@@ -7,12 +7,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 )
 
 type Post struct {
 	Id         int64     `orm:"auto"`
-	MemberId   int       `orm:"rel(fk)"`
+	Member     *Member   `orm:"rel(fk)"` // RelForeignKey relation
 	Title      string    `orm:"size(128)"`
 	Content    string    `orm:"size(8192)"`
 	PostedAt   time.Time `orm:"type(datetime)"`
@@ -144,4 +145,15 @@ func DeletePost(id int64) (err error) {
 		}
 	}
 	return
+}
+
+func CountPost() (id int64, err error) {
+	o := orm.NewOrm()
+	cnt, err := o.QueryTable(new(Post)).Count()
+	if err != nil {
+		logs.Error(err.Error())
+	}
+	logs.Debug("Count(Post)=", cnt)
+	return cnt, err
+	return 0, nil
 }
