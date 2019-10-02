@@ -3,7 +3,7 @@
 {{ define "content" }}
   {{range $object := .posts}}
     <article>
-      <h2>{{$object.Title}}</h2>
+      <h2><a href="{{urlfor "PostController.GetOne" ":id" $object.Id}}">{{$object.Title}}</a></h2>
       <div class="content border-top">
         {{$object.Content}}
       </div>
