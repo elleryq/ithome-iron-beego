@@ -155,5 +155,4 @@ func CountPost() (id int64, err error) {
 	}
 	logs.Debug("Count(Post)=", cnt)
 	return cnt, err
-	return 0, nil
 }
