@@ -25,7 +25,6 @@ func (c *MainController) Get() {
 	}
 	paginator := pagination.SetPaginator(c.Ctx, postsPerPage, postCount)
 
-	// fetch the next 20 posts
 	posts, err := models.GetAllPost(query, fields, sortby, order, int64(paginator.Offset()), int64(postsPerPage))
 	if err != nil {
 		logs.Error(err.Error())
