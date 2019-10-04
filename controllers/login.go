@@ -55,7 +55,7 @@ func (c *LoginController) Post() {
 	}
 	flash.Success("Login successed.")
 	flash.Store(&c.Controller)
-	c.Ctx.Redirect(302, "/myuser/")
+	c.Ctx.Redirect(302, beego.URLFor("PostController.GetAll"))
 }
 
 // Get ...

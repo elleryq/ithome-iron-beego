@@ -32,6 +32,7 @@
         /* text-align: center; */
       }
     </style>
+    {{ block "extra_head" .}}{{end}}
   </head>
   <body>
     <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">

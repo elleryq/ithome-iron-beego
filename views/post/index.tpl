@@ -1,18 +1,41 @@
 {{ template "base.tpl" . }}
 
 {{ define "content" }}
-  {{range $object := .posts}}
-    <article>
-      <h2><a href="{{urlfor "PostController.GetOne" ":id" $object.Id}}">{{$object.Title}}</a></h2>
-      <div class="content border-top">
-        {{str2html $object.Content}}
-      </div>
-      <div class="footer border-bottom text-right">
-        {{$object.Member.Username}} at {{date $object.PostedAt "Y-m-d h:i:s"}}
-      </div>
-    </article>
+  <h1>User list</h1>
+  {{if .flash.error }}
+  <div class="alert alert-danger" role="alert">
+    {{.flash.error}}
+  </div>
+  {{end}}
+  {{if .flash.success }}
+  <div class="alert alert-success" role="alert">
+    {{.flash.success}}
+  </div>
   {{end}}
 
+  <div>
+  <a href="{{urlfor "PostController.GetCreatePostForm"}}" class="btn btn-primary">Create</a>
+  </div>
+  <p>Total records: {{.object_list_len}}</p>
+  <table class="table">
+    <thead>
+      <th scope="col">#</th>
+      <th scope="col">Title</th>
+      <th scope="col">Member</th>
+      <th scope="col">Posted at</th>
+      <th scope="col">Modified at</th>
+    </thead>
+    <tbody>
+    {{range $object := .object_list}}
+      <tr>
+        <td scope="col">{{$object.Id}}</th>
+        <td scope="col">{{$object.Title}}</td>
+        <td scope="col">{{$object.Member.Username}}</td>
+        <td scope="col">{{date $object.PostedAt "Y-m-d h:i:s"}}</td>
+        <td scope="col">{{date $object.ModifiedAt "Y-m-d h:i:s"}}</td>
+      </tr>
+    {{end}}
+  </table>
   {{if gt .paginator.PageNums 1}}
   <nav aria-label="Page navigation">
   <ul class="pagination justify-content-end">
@@ -38,5 +61,7 @@
   </ul>
   </nav>
   {{end}}
+{{ end }}
 
+{{ define "scripts" }}
 {{ end }}

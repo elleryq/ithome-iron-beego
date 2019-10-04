@@ -3,12 +3,16 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"html/template"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/elleryq/ithome-iron-beego/models"
 
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/logs"
+	"github.com/astaxie/beego/utils/pagination"
 )
 
 //  PostController operations for Post
@@ -25,23 +29,63 @@ func (c *PostController) URLMapping() {
 	c.Mapping("Delete", c.Delete)
 }
 
+// GetAddForm ...
+func (c *PostController) GetCreatePostForm() {
+	flash := beego.ReadFromRequest(&c.Controller)
+	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+	c.TplName = "post/create.tpl"
+	flash.Store(&c.Controller)
+}
+
 // Post ...
-// @Title Post
-// @Description create Post
-// @Param	body		body 	models.Post	true		"body for Post content"
-// @Success 201 {int} models.Post
-// @Failure 403 body is empty
-// @router / [post]
-func (c *PostController) Post() {
-	var v models.Post
-	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
-	if _, err := models.AddPost(&v); err == nil {
-		c.Ctx.Output.SetStatus(201)
-		c.Data["json"] = v
-	} else {
-		c.Data["json"] = err.Error()
+func (c *PostController) PostCreatePostForm() {
+	var msg string
+	flash := beego.ReadFromRequest(&c.Controller)
+	c.TplName = "post/create.tpl"
+
+	// Check XSRF first.
+	if !c.CheckXSRFCookie() {
+		c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+		msg = "XSRF token missing or incorrect."
+		c.Data["error"] = msg
+		flash.Error(msg)
+		flash.Store(&c.Controller)
+		return
 	}
-	c.ServeJSON()
+
+	title := c.GetString("title")
+	content := c.GetString("content")
+	member_id := c.Ctx.Input.Session("user_id").(int)
+	member, err := models.GetMemberById(int64(member_id))
+	if err != nil {
+		c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+		msg = "No such user"
+		c.Data["error"] = msg
+		flash.Error(msg)
+		flash.Store(&c.Controller)
+		return
+	}
+
+	var v models.Post
+	v.Title = title
+	v.Content = content
+	v.Member = member
+	v.PostedAt = time.Now()
+	v.ModifiedAt = time.Now()
+
+	id, err := models.AddPost(&v)
+	if err != nil {
+		c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+		flash.Error(err.Error())
+		flash.Store(&c.Controller)
+		return
+	}
+
+	c.Data["id"] = id
+	flash = beego.NewFlash()
+	flash.Success("Post is created successful.")
+	flash.Store(&c.Controller)
+	c.Ctx.Redirect(302, beego.URLFor("PostController.GetAll"))
 }
 
 // GetOne ...
@@ -80,28 +124,24 @@ func (c *PostController) GetAll() {
 	var sortby []string
 	var order []string
 	var query = make(map[string]string)
-	var limit int64 = 10
-	var offset int64
+
+	flash := beego.ReadFromRequest(&c.Controller)
 
 	// fields: col1,col2,entity.col3
 	if v := c.GetString("fields"); v != "" {
 		fields = strings.Split(v, ",")
 	}
-	// limit: 10 (default is 10)
-	if v, err := c.GetInt64("limit"); err == nil {
-		limit = v
-	}
-	// offset: 0 (default is 0)
-	if v, err := c.GetInt64("offset"); err == nil {
-		offset = v
-	}
 	// sortby: col1,col2
 	if v := c.GetString("sortby"); v != "" {
 		sortby = strings.Split(v, ",")
+	} else {
+		sortby = []string{"PostedAt"}
 	}
 	// order: desc,asc
 	if v := c.GetString("order"); v != "" {
 		order = strings.Split(v, ",")
+	} else {
+		order = []string{"desc"}
 	}
 	// query: k:v,k:v
 	if v := c.GetString("query"); v != "" {
@@ -117,13 +157,24 @@ func (c *PostController) GetAll() {
 		}
 	}
 
-	l, err := models.GetAllPost(query, fields, sortby, order, offset, limit)
+	postsPerPage := 10
+	postCount, err := models.CountPost()
 	if err != nil {
-		c.Data["json"] = err.Error()
-	} else {
-		c.Data["json"] = l
+		logs.Error(err.Error())
 	}
-	c.ServeJSON()
+
+	paginator := pagination.SetPaginator(c.Ctx, postsPerPage, postCount)
+	l, err := models.GetAllPost(query, fields, sortby, order, int64(paginator.Offset()), int64(postsPerPage))
+	if err != nil {
+		logs.Error(err.Error())
+		flash.Error(err.Error())
+	} else {
+		logs.Debug("len(l)=", len(l))
+		c.Data["object_list_len"] = len(l)
+		c.Data["object_list"] = l
+	}
+	c.TplName = "post/index.tpl"
+	flash.Store(&c.Controller)
 }
 
 // Put ...

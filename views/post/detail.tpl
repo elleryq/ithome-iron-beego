@@ -7,7 +7,7 @@
 	{{else}}
       <h1>{{.post.Title}}</h1>
       <div class="content">
-	    {{.post.Content}}
+	    {{str2html .post.Content}}
       </div>
       <div class="footer border-bottom text-right">
         {{.post.Member.Username}} at {{date .post.PostedAt "Y-m-d h:i:s"}}

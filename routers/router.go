@@ -32,12 +32,13 @@ func init() {
 	beego.Router("/logout", &controllers.LogoutController{}, "get:Get")
 	beego.Router("/post/:id", &controllers.PostController{}, "get:GetOne")
 
-	// beego.InsertFilter("/myuser/*", beego.BeforeRouter, auth.Basic("foobar", "pass"))
-	beego.InsertFilter("/myuser/*", beego.BeforeRouter, FilterMember)
-	beego.Router("/myuser", &controllers.MyUserController{}, "get:GetAll")
-	beego.Router("/myuser/create", &controllers.MyUserController{}, "get:GetAddForm")
-	beego.Router("/myuser/create", &controllers.MyUserController{}, "post:PostAddForm")
-	beego.AutoRouter(&controllers.UserController{})
+	beego.InsertFilter("/backend/*", beego.BeforeRouter, FilterMember)
+	beego.Router("/backend/post", &controllers.PostController{}, "get:GetAll")
+	beego.Router("/backend/post/create", &controllers.PostController{}, "get:GetCreatePostForm")
+	beego.Router("/backend/post/create", &controllers.PostController{}, "post:PostCreatePostForm")
+	beego.Router("/backend/myuser", &controllers.MyUserController{}, "get:GetAll")
+	beego.Router("/backend/myuser/create", &controllers.MyUserController{}, "get:GetAddForm")
+	beego.Router("/backend/myuser/create", &controllers.MyUserController{}, "post:PostAddForm")
 
 	// Automated API Documentation
 	ns := beego.NewNamespace(
