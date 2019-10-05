@@ -47,7 +47,7 @@
         <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="/myuser/">User list</a>
+        <a class="nav-link" href="{{urlfor "PostController.GetAll"}}">Posts</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="/logout/">Logout</a>

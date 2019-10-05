@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"errors"
 	"html/template"
 	"strconv"
@@ -20,16 +19,80 @@ type PostController struct {
 	beego.Controller
 }
 
-// URLMapping ...
-func (c *PostController) URLMapping() {
-	c.Mapping("Post", c.Post)
-	c.Mapping("GetOne", c.GetOne)
-	c.Mapping("GetAll", c.GetAll)
-	c.Mapping("Put", c.Put)
-	c.Mapping("Delete", c.Delete)
+// GetEditPostForm ...
+func (c *PostController) GetEditPostForm() {
+	flash := beego.ReadFromRequest(&c.Controller)
+	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+
+	idStr := c.Ctx.Input.Param(":id")
+	id, _ := strconv.ParseInt(idStr, 0, 64)
+	v, err := models.GetPostById(id)
+	if err != nil {
+		c.Data["notfound"] = true
+	} else {
+		c.Data["post"] = v
+	}
+	c.TplName = "post/edit.tpl"
+	flash.Store(&c.Controller)
 }
 
-// GetAddForm ...
+// Post ...
+func (c *PostController) PostEditPostForm() {
+	var msg string
+	var id int64
+	var err error
+	var title, content string
+	var post *models.Post
+
+	flash := beego.ReadFromRequest(&c.Controller)
+	c.TplName = "post/edit.tpl"
+
+	// Check XSRF first.
+	if !c.CheckXSRFCookie() {
+		msg = "XSRF token missing or incorrect."
+		goto ERROR
+	}
+
+	id, err = c.GetInt64("id")
+	if err != nil {
+		msg = "Bad form"
+		goto ERROR
+	}
+
+	title = c.GetString("title")
+	content = c.GetString("content")
+	post, err = models.GetPostById(id)
+	if err != nil {
+		msg = "No such post"
+		goto ERROR
+	}
+
+	post.Title = title
+	post.Content = content
+	post.ModifiedAt = time.Now()
+
+	err = models.UpdatePostById(post)
+	if err != nil {
+		msg = err.Error()
+		goto ERROR
+	}
+
+	c.Data["id"] = id
+	flash = beego.NewFlash()
+	flash.Success("Post is updated successful.")
+	flash.Store(&c.Controller)
+	c.Ctx.Redirect(302, beego.URLFor("PostController.GetAll"))
+	goto FINAL
+
+ERROR:
+	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+	c.Data["error"] = msg
+	flash.Error(msg)
+	flash.Store(&c.Controller)
+FINAL:
+}
+
+// GetCreatePostForm ...
 func (c *PostController) GetCreatePostForm() {
 	flash := beego.ReadFromRequest(&c.Controller)
 	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
@@ -40,45 +103,42 @@ func (c *PostController) GetCreatePostForm() {
 // Post ...
 func (c *PostController) PostCreatePostForm() {
 	var msg string
+	var id int64
+	var title string
+	var content string
+	var member_id int
+	var member *models.Member
+	var v models.Post
+	var err error
+
 	flash := beego.ReadFromRequest(&c.Controller)
 	c.TplName = "post/create.tpl"
 
 	// Check XSRF first.
 	if !c.CheckXSRFCookie() {
-		c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
 		msg = "XSRF token missing or incorrect."
-		c.Data["error"] = msg
-		flash.Error(msg)
-		flash.Store(&c.Controller)
-		return
+		goto ERROR
 	}
 
-	title := c.GetString("title")
-	content := c.GetString("content")
-	member_id := c.Ctx.Input.Session("user_id").(int)
-	member, err := models.GetMemberById(int64(member_id))
+	title = c.GetString("title")
+	content = c.GetString("content")
+	member_id = c.Ctx.Input.Session("user_id").(int)
+	member, err = models.GetMemberById(int64(member_id))
 	if err != nil {
-		c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
 		msg = "No such user"
-		c.Data["error"] = msg
-		flash.Error(msg)
-		flash.Store(&c.Controller)
-		return
+		goto ERROR
 	}
 
-	var v models.Post
 	v.Title = title
 	v.Content = content
 	v.Member = member
 	v.PostedAt = time.Now()
 	v.ModifiedAt = time.Now()
 
-	id, err := models.AddPost(&v)
+	id, err = models.AddPost(&v)
 	if err != nil {
-		c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
-		flash.Error(err.Error())
-		flash.Store(&c.Controller)
-		return
+		msg = err.Error()
+		goto ERROR
 	}
 
 	c.Data["id"] = id
@@ -86,6 +146,14 @@ func (c *PostController) PostCreatePostForm() {
 	flash.Success("Post is created successful.")
 	flash.Store(&c.Controller)
 	c.Ctx.Redirect(302, beego.URLFor("PostController.GetAll"))
+	goto FINAL
+
+ERROR:
+	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+	c.Data["error"] = msg
+	flash.Error(msg)
+	flash.Store(&c.Controller)
+FINAL:
 }
 
 // GetOne ...
@@ -124,7 +192,13 @@ func (c *PostController) GetAll() {
 	var sortby []string
 	var order []string
 	var query = make(map[string]string)
+	var err error
+	var l []interface{}
+	var postsPerPage int = 10
+	var postCount int64 = 0
+	var paginator *pagination.Paginator
 
+	c.TplName = "post/index.tpl"
 	flash := beego.ReadFromRequest(&c.Controller)
 
 	// fields: col1,col2,entity.col3
@@ -148,70 +222,95 @@ func (c *PostController) GetAll() {
 		for _, cond := range strings.Split(v, ",") {
 			kv := strings.SplitN(cond, ":", 2)
 			if len(kv) != 2 {
-				c.Data["json"] = errors.New("Error: invalid query key/value pair")
-				c.ServeJSON()
-				return
+				err = errors.New("Error: invalid query key/value pair")
+				goto ERROR
 			}
 			k, v := kv[0], kv[1]
 			query[k] = v
 		}
 	}
 
-	postsPerPage := 10
-	postCount, err := models.CountPost()
+	postCount, err = models.CountPost()
 	if err != nil {
-		logs.Error(err.Error())
+		goto ERROR
 	}
 
-	paginator := pagination.SetPaginator(c.Ctx, postsPerPage, postCount)
-	l, err := models.GetAllPost(query, fields, sortby, order, int64(paginator.Offset()), int64(postsPerPage))
+	paginator = pagination.SetPaginator(c.Ctx, postsPerPage, postCount)
+	l, err = models.GetAllPost(query, fields, sortby, order, int64(paginator.Offset()), int64(postsPerPage))
 	if err != nil {
-		logs.Error(err.Error())
-		flash.Error(err.Error())
-	} else {
-		logs.Debug("len(l)=", len(l))
-		c.Data["object_list_len"] = len(l)
-		c.Data["object_list"] = l
+		goto ERROR
 	}
-	c.TplName = "post/index.tpl"
+
+	logs.Debug("len(l)=", len(l))
+	c.Data["object_list_len"] = len(l)
+	c.Data["object_list"] = l
+	goto FINAL
+
+ERROR:
+	logs.Error(err.Error())
+	flash.Error(err.Error())
+
+FINAL:
 	flash.Store(&c.Controller)
 }
 
-// Put ...
-// @Title Put
-// @Description update the Post
-// @Param	id		path 	string	true		"The id you want to update"
-// @Param	body		body 	models.Post	true		"body for Post content"
-// @Success 200 {object} models.Post
-// @Failure 403 :id is not int
-// @router /:id [put]
-func (c *PostController) Put() {
+// GetDeletePostForm ...
+func (c *PostController) GetDeletePostForm() {
+	flash := beego.ReadFromRequest(&c.Controller)
+	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)
-	v := models.Post{Id: id}
-	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
-	if err := models.UpdatePostById(&v); err == nil {
-		c.Data["json"] = "OK"
+	v, err := models.GetPostById(id)
+	if err != nil {
+		c.Data["notfound"] = true
 	} else {
-		c.Data["json"] = err.Error()
+		c.Data["post"] = v
 	}
-	c.ServeJSON()
+	c.TplName = "post/delete.tpl"
+	flash.Store(&c.Controller)
 }
 
-// Delete ...
-// @Title Delete
-// @Description delete the Post
-// @Param	id		path 	string	true		"The id you want to delete"
-// @Success 200 {string} delete success!
-// @Failure 403 id is empty
-// @router /:id [delete]
-func (c *PostController) Delete() {
-	idStr := c.Ctx.Input.Param(":id")
-	id, _ := strconv.ParseInt(idStr, 0, 64)
-	if err := models.DeletePost(id); err == nil {
-		c.Data["json"] = "OK"
-	} else {
-		c.Data["json"] = err.Error()
+func (c *PostController) PostDeletePostForm() {
+	var msg string
+	var err error
+	var id int64
+
+	flash := beego.ReadFromRequest(&c.Controller)
+	c.TplName = "post/delete.tpl"
+
+	// Check XSRF first.
+	if !c.CheckXSRFCookie() {
+		msg = "XSRF token missing or incorrect."
+		goto ERROR
 	}
-	c.ServeJSON()
+
+	id, err = c.GetInt64("id")
+	if err != nil {
+		msg = "Bad form"
+		goto ERROR
+	}
+
+	err = models.DeletePost(id)
+	if err != nil {
+		msg = err.Error()
+		goto ERROR
+	}
+	goto SUCCESS
+
+SUCCESS:
+	c.Data["id"] = id
+	flash = beego.NewFlash()
+	flash.Success("Post is updated successful.")
+	flash.Store(&c.Controller)
+	c.Ctx.Redirect(302, beego.URLFor("PostController.GetAll"))
+	goto FINAL
+
+ERROR:
+	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+	c.Data["error"] = msg
+	flash.Error(msg)
+	flash.Store(&c.Controller)
+
+FINAL:
 }

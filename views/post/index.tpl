@@ -1,7 +1,7 @@
 {{ template "base.tpl" . }}
 
 {{ define "content" }}
-  <h1>User list</h1>
+  <h1>Posts</h1>
   {{if .flash.error }}
   <div class="alert alert-danger" role="alert">
     {{.flash.error}}
@@ -24,6 +24,7 @@
       <th scope="col">Member</th>
       <th scope="col">Posted at</th>
       <th scope="col">Modified at</th>
+	  <th scope="col">Action</th>
     </thead>
     <tbody>
     {{range $object := .object_list}}
@@ -33,6 +34,10 @@
         <td scope="col">{{$object.Member.Username}}</td>
         <td scope="col">{{date $object.PostedAt "Y-m-d h:i:s"}}</td>
         <td scope="col">{{date $object.ModifiedAt "Y-m-d h:i:s"}}</td>
+		<td scope="col">
+		  <a class="btn btn-outline-primary" href="{{urlfor "PostController.GetEditPostForm" ":id" $object.Id}}">Edit</a>
+		  <a class="btn btn-outline-primary" href="{{urlfor "PostController.GetDeletePostForm" ":id" $object.Id}}">Delete</a>
+		</td>
       </tr>
     {{end}}
   </table>
